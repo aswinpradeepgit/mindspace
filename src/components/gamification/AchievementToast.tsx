@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/types';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
+import { hapticSuccess } from '@/lib/native';
 
 const RARITY_COLORS = {
   common: '#94a3b8',
@@ -37,6 +38,7 @@ export function AchievementToast() {
 
   useEffect(() => {
     if (showing) {
+      hapticSuccess();
       import('canvas-confetti').then(({ default: confetti }) => {
         confetti({
           particleCount: 80,
@@ -62,8 +64,8 @@ export function AchievementToast() {
           className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-80"
         >
           <div
-            className="glass p-6 flex flex-col items-center gap-3 text-center"
-            style={{ border: `1px solid ${color}50`, boxShadow: `0 0 40px ${color}30` }}
+            className="glass-solid p-6 flex flex-col items-center gap-3 text-center overflow-hidden"
+            style={{ border: `1px solid ${color}50`, boxShadow: `0 12px 40px ${color}35, 0 4px 12px rgba(0,0,0,0.08)` }}
           >
             <div
               className="absolute inset-0 rounded-[var(--radius)] opacity-10 pointer-events-none"

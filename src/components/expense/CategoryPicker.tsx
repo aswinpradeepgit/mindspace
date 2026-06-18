@@ -119,16 +119,28 @@ export function CategoryPicker({ value, onChange }: Props) {
             </div>
             <div>
               <p className="text-[10px] text-slate-500 mb-1.5">Color</p>
-              <div className="flex flex-wrap gap-2">
-                {CUSTOM_CATEGORY_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className="w-6 h-6 rounded-full transition-all"
-                    style={{ background: c, outline: color === c ? `2px solid white` : 'none', outlineOffset: 2 }}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-2.5">
+                {CUSTOM_CATEGORY_COLORS.map((c) => {
+                  const selected = color === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      aria-label={`Select color ${c}`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold transition-all duration-150"
+                      style={{
+                        background: c,
+                        transform: selected ? 'scale(1.15)' : 'scale(1)',
+                        boxShadow: selected
+                          ? `0 0 0 2px #ffffff, 0 0 0 4px ${c}, 0 2px 8px ${c}80`
+                          : '0 1px 3px rgba(0,0,0,0.12)',
+                      }}
+                    >
+                      {selected ? '✓' : ''}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <button

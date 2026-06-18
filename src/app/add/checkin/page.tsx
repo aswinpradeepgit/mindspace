@@ -10,6 +10,7 @@ import { RegretPrompt } from '@/components/emotion/RegretPrompt';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
 import { formatMoney } from '@/lib/money';
 import { resolveCategory } from '@/lib/categories';
+import { hapticMedium } from '@/lib/native';
 import { toast } from 'sonner';
 
 const STEPS = ['intent', 'emotion', 'reflect'] as const;
@@ -59,6 +60,7 @@ export default function CheckInPage() {
             wouldSpendLess,
           },
         });
+        hapticMedium();
         toast.success('Expense logged! 🎉', { description: 'XP earned for tracking mindfully.' });
         router.push('/');
       } finally {

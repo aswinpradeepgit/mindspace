@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 import { Badge } from '@/types';
 import { getAllBadgesWithStatus } from '@/lib/gamification/badges';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
@@ -15,26 +16,35 @@ const RARITY_COLORS = {
 function BadgeCard({ badge }: { badge: Badge }) {
   const isUnlocked = !!badge.unlockedAt;
   const color = RARITY_COLORS[badge.rarity];
+  // Unlocked badges glow in their rarity color; locked ones pulse in a soft
+  // muted purple, slower — alive but dormant, enticing the user to earn them.
+  const glow = isUnlocked ? color : '#a78bfa';
+
+  const glowVars = {
+    '--badge-glow-soft': `${glow}${isUnlocked ? '40' : '20'}`,
+    '--badge-glow-strong': `${glow}${isUnlocked ? '99' : '45'}`,
+    '--badge-border-soft': `${glow}${isUnlocked ? '55' : '30'}`,
+    '--badge-border-strong': `${glow}${isUnlocked ? 'cc' : '66'}`,
+    '--badge-speed': isUnlocked ? '2.4s' : '3.8s',
+  } as CSSProperties;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.05 }}
-      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
-        isUnlocked
-          ? 'bg-purple-50/70 border-purple-100'
-          : 'bg-purple-50/40 border-purple-100/70 opacity-50'
+      className={`badge-alive relative flex flex-col items-center gap-2 p-4 rounded-2xl border ${
+        isUnlocked ? 'bg-purple-50/70' : 'bg-purple-50/40 opacity-80'
       }`}
-      style={isUnlocked ? { boxShadow: `0 0 20px ${color}20` } : {}}
+      style={glowVars}
     >
       {isUnlocked && (
         <div
-          className="absolute inset-0 rounded-2xl opacity-10"
+          className="absolute inset-0 rounded-2xl opacity-10 pointer-events-none"
           style={{ background: `radial-gradient(circle at center, ${color}, transparent 70%)` }}
         />
       )}
-      <span className={`text-3xl ${isUnlocked ? '' : 'grayscale opacity-40'}`}>
+      <span className={`text-3xl relative z-10 ${isUnlocked ? 'float-anim' : 'grayscale opacity-50'}`}>
         {isUnlocked ? badge.emoji : '🔒'}
       </span>
       <div className="text-center">

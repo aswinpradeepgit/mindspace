@@ -131,6 +131,17 @@
   box-shadow: var(--card-shadow);
 }
 
+/* Opaque variant for surfaces that sit ON TOP of scrolling content
+   (bottom nav, toasts) — no see-through, clean and readable. */
+.glass-solid {
+  background: #ffffff;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 28px rgba(124, 92, 255, 0.16), 0 2px 8px rgba(124, 92, 255, 0.1);
+}
+
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, #7c5cff, #00c2d1);
@@ -196,3 +207,19 @@
   to { transform: rotate(360deg); }
 }
 .spin-slow { animation: spin-slow 8s linear infinite; }
+
+/* Living badge glow — breathing border + halo. Colors come from CSS vars
+   set per-card so each rarity/state glows in its own color. */
+@keyframes badge-breathe {
+  0%, 100% {
+    box-shadow: 0 0 6px 0 var(--badge-glow-soft);
+    border-color: var(--badge-border-soft);
+  }
+  50% {
+    box-shadow: 0 0 18px 3px var(--badge-glow-strong);
+    border-color: var(--badge-border-strong);
+  }
+}
+.badge-alive {
+  animation: badge-breathe var(--badge-speed, 2.6s) ease-in-out infinite;
+}

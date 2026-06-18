@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
 import { getLevelInfo } from '@/lib/gamification/levels';
+import { hapticSuccess } from '@/lib/native';
 
 export function LevelUpModal() {
   const leveledUpTo = useExpenseStore((s) => s.leveledUpTo);
@@ -11,6 +12,7 @@ export function LevelUpModal() {
 
   useEffect(() => {
     if (leveledUpTo) {
+      hapticSuccess();
       import('canvas-confetti').then(({ default: confetti }) => {
         const burst = () =>
           confetti({

@@ -6,6 +6,7 @@ import { AchievementToast } from '@/components/gamification/AchievementToast';
 import { LevelUpModal } from '@/components/gamification/LevelUpModal';
 import { Toaster } from '@/components/ui/sonner';
 import { HydrateStore } from '@/components/layout/HydrateStore';
+import { NativeInit } from '@/components/layout/NativeInit';
 
 const geistSans = Geist({
   variable: '--font-sans',
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-screen text-slate-900 pb-24">
         <HydrateStore />
+        <NativeInit />
         <main className="max-w-2xl mx-auto px-4 pt-6">
           {children}
         </main>
