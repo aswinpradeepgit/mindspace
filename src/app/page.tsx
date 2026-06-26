@@ -51,11 +51,20 @@ export default function DashboardPage() {
           <p className="text-slate-600 text-sm">Welcome back,</p>
           <h1 className="text-2xl font-bold gradient-text">{profile.name}</h1>
         </div>
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
-          style={{ background: levelInfo.color + '30', color: levelInfo.color, border: `1px solid ${levelInfo.color}50` }}
-        >
-          {profile.level}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account"
+            aria-label="Account"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-purple-50 border border-purple-100 hover:bg-purple-100 transition-all"
+          >
+            👤
+          </Link>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+            style={{ background: levelInfo.color + '30', color: levelInfo.color, border: `1px solid ${levelInfo.color}50` }}
+          >
+            {profile.level}
+          </div>
         </div>
       </motion.div>
 

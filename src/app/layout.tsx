@@ -7,6 +7,7 @@ import { LevelUpModal } from '@/components/gamification/LevelUpModal';
 import { Toaster } from '@/components/ui/sonner';
 import { HydrateStore } from '@/components/layout/HydrateStore';
 import { NativeInit } from '@/components/layout/NativeInit';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 
 const geistSans = Geist({
   variable: '--font-sans',
@@ -30,15 +31,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen text-slate-900 pb-24">
-        <HydrateStore />
-        <NativeInit />
-        <main className="max-w-2xl mx-auto px-4 pt-6">
-          {children}
-        </main>
-        <BottomNav />
-        <AchievementToast />
-        <LevelUpModal />
-        <Toaster theme="light" position="top-center" />
+        <AuthProvider>
+          <HydrateStore />
+          <NativeInit />
+          <main className="max-w-2xl mx-auto px-4 pt-6">
+            {children}
+          </main>
+          <BottomNav />
+          <AchievementToast />
+          <LevelUpModal />
+          <Toaster theme="light" position="top-center" />
+        </AuthProvider>
       </body>
     </html>
   );
