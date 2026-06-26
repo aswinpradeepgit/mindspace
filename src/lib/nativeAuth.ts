@@ -39,21 +39,61 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
   return { error: null };
 }
 
-/** Complete the native OAuth flow from the deep-link URL. */
-export async function completeNativeAuth(url: string): Promise<void> {
-  if (!url.startsWith('com.mindspend.app://auth-callback')) return;
-
-  // The code is in the query string (PKCE flow): ...auth-callback?code=XXedit
-  const codeMatch = url.match(/[?&]code=([^&]+)/);
-  if (codeMatch) {
-    const code = decodeURIComponent(codeMatch[1]);
-    await supabase.auth.exchangeCodeForSession(code);
-  }
-
+async function closeBrowser() {
   try {
     const { Browser } = await import('@capacitor/browser');
     await Browser.close();
   } catch {
-    /* browser may already be closed */
+    /* may already be closed */
+  }
+}
+
+/**
+ * Complete the native OAuth flow from the deep-link URL.
+ * Handles both the PKCE (?code=) and implicit (#access_token=) flows, and
+ * surfaces any error so we can see it on the device.
+ */
+export async function completeNativeAuth(url: string): Promise<void> {
+  if (!url.includes('auth-callback')) return;
+
+  // Params can be in the query string (?...) or the hash (#...).
+  const sep = url.search(/[?#]/);
+  const params = new URLSearchParams(sep >= 0 ? url.slice(sep + 1) : '');
+
+  const errorDesc = params.get('error_description') || params.get('error');
+  const code = params.get('code');
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+
+  try {
+    if (errorDesc) {
+      alert('Google sign-in error: ' + errorDesc);
+      return;
+    }
+
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        alert('Sign-in failed (code): ' + error.message);
+        return;
+      }
+    } else if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) {
+        alert('Sign-in failed (token): ' + error.message);
+        return;
+      }
+    } else {
+      alert('No auth code returned.\nURL: ' + url.slice(0, 160));
+      return;
+    }
+
+    // Success → go to the dashboard.
+    window.location.href = '/';
+  } finally {
+    await closeBrowser();
   }
 }
