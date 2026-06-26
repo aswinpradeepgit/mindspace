@@ -1,36 +1,44 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
-import { generateRecommendations, totalOpportunity } from '@/lib/insights/coach';
+import { apiFetch } from '@/lib/api';
+import { generateRecommendations } from '@/lib/insights/coach';
 import { formatMoney } from '@/lib/money';
-import { Recommendation } from '@/types';
 
-const SEVERITY_STYLE = {
-  tip: { border: 'border-cyan-500/20', dot: '#06b6d4' },
-  opportunity: { border: 'border-amber-500/20', dot: '#f59e0b' },
-  win: { border: 'border-emerald-500/20', dot: '#10b981' },
-};
+interface ApiRec {
+  title: string;
+  body: string;
+  severity: 'tip' | 'opportunity' | 'win';
+  estimated_monthly_saving: number;
+}
+interface CoachResponse {
+  summary?: string;
+  recommendations: ApiRec[];
+}
 
-function RecItem({ rec, currency }: { rec: Recommendation; currency: string }) {
+const SEVERITY_BORDER = {
+  tip: 'border-cyan-500/20',
+  opportunity: 'border-amber-500/20',
+  win: 'border-emerald-500/20',
+} as const;
+
+function RecItem({ rec, currency }: { rec: ApiRec; currency: string }) {
   const [open, setOpen] = useState(false);
-  const style = SEVERITY_STYLE[rec.severity];
-
   return (
     <motion.div
       layout
       onClick={() => setOpen((o) => !o)}
-      className={`rounded-xl border ${style.border} bg-purple-50/40 p-3 cursor-pointer`}
+      className={`rounded-xl border ${SEVERITY_BORDER[rec.severity]} bg-purple-50/40 p-3 cursor-pointer`}
     >
       <div className="flex items-center gap-2.5">
-        <span className="text-lg">{rec.icon}</span>
         <p className="text-sm font-medium text-slate-800 flex-1 leading-tight">{rec.title}</p>
-        {rec.estimatedMonthlySaving ? (
+        {rec.estimated_monthly_saving > 0 && (
           <span className="text-xs font-bold text-emerald-600 whitespace-nowrap">
-            +{formatMoney(rec.estimatedMonthlySaving, currency, { whole: true })}/mo
+            +{formatMoney(rec.estimated_monthly_saving, currency, { whole: true })}/mo
           </span>
-        ) : null}
+        )}
       </div>
       <AnimatePresence>
         {open && (
@@ -38,7 +46,7 @@ function RecItem({ rec, currency }: { rec: Recommendation; currency: string }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="text-xs text-slate-600 mt-2 leading-relaxed pl-7"
+            className="text-xs text-slate-600 mt-2 leading-relaxed"
           >
             {rec.body}
           </motion.p>
@@ -50,8 +58,45 @@ function RecItem({ rec, currency }: { rec: Recommendation; currency: string }) {
 
 export function AICoachCard() {
   const { expenses, profile } = useExpenseStore();
-  const recs = useMemo(() => generateRecommendations(expenses, profile), [expenses, profile]);
-  const opportunity = totalOpportunity(recs);
+  const [data, setData] = useState<CoachResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Local rules-based result used as an instant placeholder / offline fallback.
+  const fallback = useMemo<CoachResponse>(() => {
+    const recs = generateRecommendations(expenses, profile);
+    return {
+      recommendations: recs.map((r) => ({
+        title: r.title,
+        body: r.body,
+        severity: r.severity,
+        estimated_monthly_saving: r.estimatedMonthlySaving ?? 0,
+      })),
+    };
+  }, [expenses, profile]);
+
+  const load = useCallback(async (refresh = false) => {
+    setLoading(true);
+    try {
+      const res = await apiFetch<CoachResponse>(
+        `/api/v1/coach?period=weekly${refresh ? '&refresh=true' : ''}`
+      );
+      setData(res);
+    } catch {
+      setData(null); // show fallback
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const shown = data ?? fallback;
+  const opportunity = shown.recommendations.reduce(
+    (s, r) => s + (r.estimated_monthly_saving || 0),
+    0
+  );
 
   return (
     <div className="glass p-4 space-y-3 border border-purple-500/20">
@@ -60,7 +105,9 @@ export function AICoachCard() {
           <span className="text-xl spin-slow">🤖</span>
           <div>
             <h3 className="text-sm font-bold text-slate-900">AI Money Coach</h3>
-            <p className="text-[10px] text-slate-500">Personalized from your patterns & emotions</p>
+            <p className="text-[10px] text-slate-500">
+              {loading ? 'Thinking…' : 'Personalized from your patterns & emotions'}
+            </p>
           </div>
         </div>
         {opportunity > 0 && (
@@ -72,12 +119,26 @@ export function AICoachCard() {
           </div>
         )}
       </div>
+
+      {shown.summary && (
+        <p className="text-xs text-slate-700 leading-relaxed bg-purple-50/50 rounded-xl p-3">
+          {shown.summary}
+        </p>
+      )}
+
       <div className="space-y-2">
-        {recs.map((rec) => (
-          <RecItem key={rec.id} rec={rec} currency={profile.currency} />
+        {shown.recommendations.map((rec, i) => (
+          <RecItem key={i} rec={rec} currency={profile.currency} />
         ))}
       </div>
-      <p className="text-[10px] text-slate-400 text-center">Tap any insight to expand</p>
+
+      <button
+        onClick={() => load(true)}
+        disabled={loading}
+        className="w-full text-[11px] text-purple-600 font-medium py-1.5 disabled:opacity-50"
+      >
+        {loading ? 'Refreshing…' : '↻ Refresh coaching'}
+      </button>
     </div>
   );
 }
