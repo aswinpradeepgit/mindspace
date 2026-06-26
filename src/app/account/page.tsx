@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { apiFetch } from '@/lib/api';
@@ -38,6 +39,7 @@ function GoogleIcon() {
 }
 
 function AuthForm() {
+  const router = useRouter();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,7 +51,7 @@ function AuthForm() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/account` },
+      options: { redirectTo: `${window.location.origin}/` },
     });
     if (error) setError(error.message);
   };
@@ -66,10 +68,13 @@ function AuthForm() {
         // If on, there's no session yet.
         if (!data.session) {
           setInfo("Almost there — tap the confirmation link we just emailed you, then sign in.");
+        } else {
+          router.push('/');
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        router.push('/');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
