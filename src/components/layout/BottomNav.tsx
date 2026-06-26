@@ -16,6 +16,10 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
+  // The account / login page is a full-screen surface with its own back link —
+  // no bottom nav there.
+  if (pathname.startsWith('/account')) return null;
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
       <div className="max-w-2xl mx-auto px-4 pb-4">

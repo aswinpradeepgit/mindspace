@@ -11,24 +11,29 @@ export default function AccountPage() {
   const { user, loading, signOut } = useAuth();
 
   if (loading) {
-    return <p className="text-slate-500 text-sm">Loading…</p>;
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-slate-500 text-sm">Loading…</p>
+      </div>
+    );
   }
 
+  return user ? (
+    <SignedIn email={user.email ?? ''} onSignOut={signOut} />
+  ) : (
+    <AuthForm />
+  );
+}
+
+// ── Google "G" logo ──────────────────────────────────────────────────────────
+function GoogleIcon() {
   return (
-    <div className="space-y-5">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-bold text-slate-900">Account</h1>
-        <p className="text-slate-600 text-sm">
-          {user ? 'Your cloud account & sync.' : 'Sign in to sync across devices.'}
-        </p>
-      </motion.div>
-
-      {user ? <SignedIn email={user.email ?? ''} onSignOut={signOut} /> : <AuthForm />}
-
-      <Link href="/" className="block text-center text-xs text-purple-600 pt-2">
-        ← Back to dashboard
-      </Link>
-    </div>
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.5 29.5 4.5 24 4.5 16.3 4.5 9.7 8.9 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 43.5c5.4 0 10.3-2 14-5.3l-6.5-5.5c-2 1.5-4.6 2.3-7.5 2.3-5.2 0-9.6-3.3-11.2-8l-6.6 5.1C9.6 39 16.2 43.5 24 43.5z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.5 5.5c-.5.4 7-5.1 7-14.4 0-1.2-.1-2.3-.4-3.5z" />
+    </svg>
   );
 }
 
@@ -37,72 +42,135 @@ function AuthForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
-  const submit = async () => {
+  const google = async () => {
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/account` },
+    });
+    if (error) setError(error.message);
+  };
+
+  const submitEmail = async () => {
     setBusy(true);
-    setMsg(null);
+    setError(null);
+    setInfo(null);
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMsg('Account created! If email confirmation is on, check your inbox, then sign in.');
+        // If confirmation is off, a session is returned and AuthProvider takes over.
+        // If on, there's no session yet.
+        if (!data.session) {
+          setInfo("Almost there — tap the confirmation link we just emailed you, then sign in.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // AuthProvider picks up the session automatically.
       }
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Something went wrong');
+      setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="glass p-5 space-y-4">
-      <div className="flex gap-1 glass p-1 rounded-xl">
-        {(['signin', 'signup'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-              mode === m ? 'bg-purple-600 text-white' : 'text-slate-600'
-            }`}
-          >
-            {m === 'signin' ? 'Sign In' : 'Sign Up'}
-          </button>
-        ))}
-      </div>
-
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="w-full glass px-4 py-3 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none placeholder:text-slate-400"
-      />
-      <input
-        type="password"
-        placeholder="Password (min 6 chars)"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="w-full glass px-4 py-3 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none placeholder:text-slate-400"
-      />
-
-      <button
-        onClick={submit}
-        disabled={busy || !email || password.length < 6}
-        className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
-          busy || !email || password.length < 6
-            ? 'bg-purple-50/70 text-slate-400'
-            : 'bg-purple-600 hover:bg-purple-500 text-white'
-        }`}
+    <div className="min-h-[88vh] flex flex-col">
+      {/* Hero */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center pt-10 pb-8"
       >
-        {busy ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-      </button>
+        <div className="text-6xl mb-3 float-anim">🪙</div>
+        <h1 className="text-3xl font-bold gradient-text">MindSpend</h1>
+        <p className="text-slate-600 text-sm mt-2 px-6">
+          Spend with awareness. Save more, feel better.
+        </p>
+      </motion.div>
 
-      {msg && <p className="text-xs text-slate-600 leading-relaxed">{msg}</p>}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="glass p-6 space-y-4"
+      >
+        {/* Google — primary, mobile-friendly */}
+        <button
+          onClick={google}
+          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl bg-white border border-slate-200 text-slate-800 font-semibold text-sm shadow-sm hover:bg-slate-50 transition-all"
+        >
+          <GoogleIcon />
+          Continue with Google
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-purple-100" />
+          <span className="text-[11px] text-slate-400 font-medium">or use email</span>
+          <div className="h-px flex-1 bg-purple-100" />
+        </div>
+
+        {/* Email + password */}
+        <div className="flex gap-1 bg-purple-50/70 p-1 rounded-xl">
+          {(['signin', 'signup'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                setMode(m);
+                setError(null);
+                setInfo(null);
+              }}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                mode === m ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              {m === 'signin' ? 'Sign In' : 'Sign Up'}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full bg-white px-4 py-3 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none focus:border-purple-300 placeholder:text-slate-400"
+        />
+        <input
+          type="password"
+          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full bg-white px-4 py-3 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none focus:border-purple-300 placeholder:text-slate-400"
+        />
+
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={submitEmail}
+          disabled={busy || !email || password.length < 6}
+          className={`w-full py-3.5 rounded-2xl text-sm font-semibold transition-all ${
+            busy || !email || password.length < 6
+              ? 'bg-purple-50/70 text-slate-400'
+              : 'bg-purple-600 hover:bg-purple-500 text-white glow-purple'
+          }`}
+        >
+          {busy ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+        </motion.button>
+
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+        {info && <p className="text-xs text-emerald-600 text-center leading-relaxed">{info}</p>}
+      </motion.div>
+
+      <Link href="/" className="block text-center text-xs text-slate-500 mt-6">
+        Skip for now — explore offline →
+      </Link>
     </div>
   );
 }
@@ -125,7 +193,12 @@ function SignedIn({ email, onSignOut }: { email: string; onSignOut: () => void }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-bold text-slate-900">Account</h1>
+        <p className="text-slate-600 text-sm">Your cloud account & sync.</p>
+      </motion.div>
+
       <div className="glass p-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-slate-500">Signed in as</p>
@@ -189,6 +262,10 @@ function SignedIn({ email, onSignOut }: { email: string; onSignOut: () => void }
           </pre>
         )}
       </div>
+
+      <Link href="/" className="block text-center text-xs text-purple-600">
+        ← Back to dashboard
+      </Link>
     </div>
   );
 }
