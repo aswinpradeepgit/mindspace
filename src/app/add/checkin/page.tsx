@@ -63,6 +63,8 @@ export default function CheckInPage() {
         hapticMedium();
         toast.success('Expense logged! 🎉', { description: 'XP earned for tracking mindfully.' });
         router.push('/');
+      } catch {
+        toast.error("Couldn't save — check your connection and try again.");
       } finally {
         setSubmitting(false);
       }

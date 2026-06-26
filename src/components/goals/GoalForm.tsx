@@ -27,15 +27,19 @@ export function GoalForm({ onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !amount || !targetDate) return;
-    await addGoal({
-      name,
-      targetAmount: Math.round(parseFloat(amount) * 100),
-      currentAmount: 0,
-      targetDate,
-      emoji,
-    });
-    toast.success('Goal created! 🎯');
-    onClose();
+    try {
+      await addGoal({
+        name,
+        targetAmount: Math.round(parseFloat(amount) * 100),
+        currentAmount: 0,
+        targetDate,
+        emoji,
+      });
+      toast.success('Goal created! 🎯');
+      onClose();
+    } catch {
+      toast.error("Couldn't save — check your connection and try again.");
+    }
   };
 
   return (
