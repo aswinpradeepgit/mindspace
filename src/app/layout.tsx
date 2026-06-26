@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { HydrateStore } from '@/components/layout/HydrateStore';
 import { NativeInit } from '@/components/layout/NativeInit';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { AuthGate } from '@/components/auth/AuthGate';
 
 const geistSans = Geist({
   variable: '--font-sans',
@@ -34,12 +35,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <HydrateStore />
           <NativeInit />
-          <main className="max-w-2xl mx-auto px-4 pt-6">
-            {children}
-          </main>
-          <BottomNav />
-          <AchievementToast />
-          <LevelUpModal />
+          <AuthGate>
+            <main className="max-w-2xl mx-auto px-4 pt-6">
+              {children}
+            </main>
+            <BottomNav />
+            <AchievementToast />
+            <LevelUpModal />
+          </AuthGate>
           <Toaster theme="light" position="top-center" />
         </AuthProvider>
       </body>

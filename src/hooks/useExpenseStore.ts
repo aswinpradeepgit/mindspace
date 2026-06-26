@@ -1,22 +1,20 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { Badge, CustomCategory, Expense, SavingsGoal, UserProfile } from '@/types';
-import { detectCurrency } from '@/lib/money';
+import { apiFetch } from '@/lib/api';
 import {
-  addExpenseToDB,
-  updateExpenseInDB,
-  deleteExpenseFromDB,
-  getAllExpenses,
-  getAllGoals,
-  addGoalToDB,
-  updateGoalInDB,
-  deleteGoalFromDB,
-} from '@/lib/db';
-import { calculateXP } from '@/lib/gamification/xp';
-import { getLevelFromXP } from '@/lib/gamification/levels';
-import { evaluateBadges } from '@/lib/gamification/badges';
+  ApiExpense,
+  ApiExpenseResult,
+  ApiGoal,
+  ApiProfile,
+  badgeIdToBadge,
+  expenseDraftToBody,
+  goalToBody,
+  toExpense,
+  toGoal,
+  toProfile,
+} from '@/lib/cloudMap';
 
 const DEFAULT_PROFILE: UserProfile = {
   id: 'default',
@@ -26,7 +24,7 @@ const DEFAULT_PROFILE: UserProfile = {
   streakDays: 0,
   lastLogDate: null,
   badges: [],
-  currency: 'USD',
+  currency: 'INR',
   currencyLocked: false,
   customCategories: [],
   createdAt: new Date().toISOString(),
@@ -42,6 +40,7 @@ interface ExpenseStoreState {
   leveledUpTo: number | null;
   // actions
   hydrate: () => Promise<void>;
+  reset: () => void;
   setCurrency: (code: string) => void;
   addCustomCategory: (cat: Omit<CustomCategory, 'id'>) => void;
   clearLevelUp: () => void;
@@ -57,174 +56,162 @@ interface ExpenseStoreState {
   unlockBadge: (badgeId: string) => void;
 }
 
-function updateStreak(profile: UserProfile, today: string): Partial<UserProfile> {
-  if (!profile.lastLogDate) {
-    return { streakDays: 1, lastLogDate: today };
-  }
-  const last = new Date(profile.lastLogDate);
-  const todayDate = new Date(today);
-  const diffDays = Math.floor(
-    (todayDate.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)
-  );
+export const useExpenseStore = create<ExpenseStoreState>()((set, get) => ({
+  expenses: [],
+  goals: [],
+  profile: DEFAULT_PROFILE,
+  draftExpense: null,
+  hydrated: false,
+  newBadges: [],
+  leveledUpTo: null,
 
-  if (diffDays === 0) return {}; // same day, no change
-  if (diffDays === 1) return { streakDays: profile.streakDays + 1, lastLogDate: today };
-  return { streakDays: 1, lastLogDate: today }; // streak broken
-}
+  hydrate: async () => {
+    // Load everything for the signed-in user from the cloud.
+    const [profile, expenses, goals] = await Promise.all([
+      apiFetch<ApiProfile>('/api/v1/profile'),
+      apiFetch<ApiExpense[]>('/api/v1/expenses'),
+      apiFetch<ApiGoal[]>('/api/v1/goals'),
+    ]);
+    set({
+      profile: toProfile(profile),
+      expenses: expenses.map(toExpense),
+      goals: goals.map(toGoal),
+      hydrated: true,
+    });
+  },
 
-export const useExpenseStore = create<ExpenseStoreState>()(
-  persist(
-    (set, get) => ({
+  reset: () =>
+    set({
       expenses: [],
       goals: [],
       profile: DEFAULT_PROFILE,
-      draftExpense: null,
       hydrated: false,
       newBadges: [],
       leveledUpTo: null,
+      draftExpense: null,
+    }),
 
-      hydrate: async () => {
-        if (get().hydrated) return;
-        const [expenses, goals] = await Promise.all([getAllExpenses(), getAllGoals()]);
-        const profile = get().profile;
-        // Auto-detect currency the first time, unless the user has set one.
-        const patch: Partial<UserProfile> = {};
-        if (!profile.currencyLocked && profile.currency === 'USD') {
-          patch.currency = detectCurrency();
-        }
-        if (!profile.customCategories) patch.customCategories = [];
-        set({
-          expenses,
-          goals,
-          hydrated: true,
-          profile: { ...profile, ...patch },
-        });
+  setCurrency: (code) => {
+    const profile = get().profile;
+    set({ profile: { ...profile, currency: code, currencyLocked: true } });
+    apiFetch('/api/v1/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ currency: code }),
+    }).catch(() => {});
+  },
+
+  addCustomCategory: (cat) => {
+    // Optimistic insert; reconcile id from the server response.
+    const tempId = `tmp_${crypto.randomUUID().slice(0, 8)}`;
+    const profile = get().profile;
+    set({
+      profile: {
+        ...profile,
+        customCategories: [...(profile.customCategories ?? []), { ...cat, id: tempId }],
       },
-
-      setCurrency: (code) => {
-        set({ profile: { ...get().profile, currency: code, currencyLocked: true } });
-      },
-
-      addCustomCategory: (cat) => {
-        const newCat: CustomCategory = { ...cat, id: `custom_${crypto.randomUUID().slice(0, 8)}` };
-        const profile = get().profile;
+    });
+    apiFetch<{ id: string }>('/api/v1/categories', {
+      method: 'POST',
+      body: JSON.stringify(cat),
+    })
+      .then((res) => {
+        const p = get().profile;
         set({
           profile: {
-            ...profile,
-            customCategories: [...(profile.customCategories ?? []), newCat],
+            ...p,
+            customCategories: (p.customCategories ?? []).map((c) =>
+              c.id === tempId ? { ...c, id: res.id } : c
+            ),
           },
         });
-      },
+      })
+      .catch(() => {});
+  },
 
-      clearLevelUp: () => set({ leveledUpTo: null }),
+  clearLevelUp: () => set({ leveledUpTo: null }),
 
-      addExpense: async (raw) => {
-        const { profile, expenses } = get();
-        const today = raw.date;
-        const streakUpdate = updateStreak(profile, today);
-        const updatedProfile = { ...profile, ...streakUpdate };
+  addExpense: async (raw) => {
+    const prevLevel = get().profile.level;
+    const result = await apiFetch<ApiExpenseResult>('/api/v1/expenses', {
+      method: 'POST',
+      body: JSON.stringify(expenseDraftToBody(raw)),
+    });
 
-        const xpAwarded = calculateXP(raw, updatedProfile, expenses);
-        const expense: Expense = {
-          ...raw,
-          id: crypto.randomUUID(),
-          xpAwarded,
-          createdAt: new Date().toISOString(),
-        };
+    const profile = toProfile(result.profile);
+    const newBadges = result.new_badges.map(badgeIdToBadge);
 
-        await addExpenseToDB(expense);
+    set({
+      expenses: [toExpense(result.expense), ...get().expenses],
+      profile,
+      draftExpense: null,
+      newBadges,
+      leveledUpTo: profile.level > prevLevel ? profile.level : null,
+    });
 
-        const newExpenses = [expense, ...expenses];
-        const prevLevel = updatedProfile.level;
-        const newXP = updatedProfile.xp + xpAwarded;
-        const newLevel = getLevelFromXP(newXP);
-        const finalProfile: UserProfile = {
-          ...updatedProfile,
-          xp: newXP,
-          level: newLevel,
-        };
+    return newBadges;
+  },
 
-        const newBadges = evaluateBadges(newExpenses, finalProfile);
-        const allBadges = [
-          ...finalProfile.badges.filter((b) => !newBadges.find((nb) => nb.id === b.id)),
-          ...newBadges,
-        ];
+  updateExpense: async (id, updates) => {
+    // No backend PATCH yet — update locally (used by the deferred-regret banner).
+    const { expenses } = get();
+    set({ expenses: expenses.map((e) => (e.id === id ? { ...e, ...updates } : e)) });
+  },
 
-        set({
-          expenses: newExpenses,
-          profile: { ...finalProfile, badges: allBadges },
-          draftExpense: null,
-          newBadges,
-          leveledUpTo: newLevel > prevLevel ? newLevel : null,
-        });
+  deleteExpense: async (id) => {
+    set({ expenses: get().expenses.filter((e) => e.id !== id) });
+    await apiFetch(`/api/v1/expenses/${id}`, { method: 'DELETE' }).catch(() => {});
+  },
 
-        return newBadges;
-      },
+  setDraft: (draft) => set({ draftExpense: draft }),
 
-      updateExpense: async (id, updates) => {
-        const { expenses } = get();
-        const existing = expenses.find((e) => e.id === id);
-        if (!existing) return;
-        const updated = { ...existing, ...updates };
-        await updateExpenseInDB(updated);
-        set({ expenses: expenses.map((e) => (e.id === id ? updated : e)) });
-      },
+  addGoal: async (raw) => {
+    const created = await apiFetch<ApiGoal>('/api/v1/goals', {
+      method: 'POST',
+      body: JSON.stringify(goalToBody(raw)),
+    });
+    set({ goals: [toGoal(created), ...get().goals] });
+  },
 
-      deleteExpense: async (id) => {
-        await deleteExpenseFromDB(id);
-        set({ expenses: get().expenses.filter((e) => e.id !== id) });
-      },
-
-      setDraft: (draft) => set({ draftExpense: draft }),
-
-      addGoal: async (raw) => {
-        const goal: SavingsGoal = {
-          ...raw,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        };
-        await addGoalToDB(goal);
-        set({ goals: [...get().goals, goal] });
-      },
-
-      updateGoal: async (id, updates) => {
-        const { goals } = get();
-        const existing = goals.find((g) => g.id === id);
-        if (!existing) return;
-        const updated = { ...existing, ...updates };
-        await updateGoalInDB(updated);
-        set({ goals: goals.map((g) => (g.id === id ? updated : g)) });
-      },
-
-      deleteGoal: async (id) => {
-        await deleteGoalFromDB(id);
-        set({ goals: get().goals.filter((g) => g.id !== id) });
-      },
-
-      updateProfile: (updates) => {
-        set({ profile: { ...get().profile, ...updates } });
-      },
-
-      clearNewBadges: () => set({ newBadges: [] }),
-
-      unlockBadge: (badgeId) => {
-        const { profile } = get();
-        const existing = profile.badges.find((b) => b.id === badgeId);
-        if (existing?.unlockedAt) return;
-        const updated = profile.badges.map((b) =>
-          b.id === badgeId ? { ...b, unlockedAt: new Date().toISOString() } : b
-        );
-        set({ profile: { ...profile, badges: updated } });
-      },
-    }),
-    {
-      name: 'expense-tracker-profile',
-      storage: createJSONStorage(() => (typeof window !== 'undefined' ? localStorage : {
-        getItem: () => null,
-        setItem: () => {},
-        removeItem: () => {},
-      })),
-      partialize: (s) => ({ profile: s.profile }),
+  updateGoal: async (id, updates) => {
+    const updated = await apiFetch<ApiGoal>(`/api/v1/goals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(goalToBody(updates)),
+    });
+    set({ goals: get().goals.map((g) => (g.id === id ? toGoal(updated) : g)) });
+    // Completing a goal awards XP server-side — refresh the profile to reflect it.
+    if (updated.completed_at) {
+      apiFetch<ApiProfile>('/api/v1/profile')
+        .then((p) => set({ profile: toProfile(p) }))
+        .catch(() => {});
     }
-  )
-);
+  },
+
+  deleteGoal: async (id) => {
+    set({ goals: get().goals.filter((g) => g.id !== id) });
+    await apiFetch(`/api/v1/goals/${id}`, { method: 'DELETE' }).catch(() => {});
+  },
+
+  updateProfile: (updates) => {
+    const profile = { ...get().profile, ...updates };
+    set({ profile });
+    const body: Record<string, unknown> = {};
+    if (updates.name !== undefined) body.name = updates.name;
+    if (updates.currency !== undefined) body.currency = updates.currency;
+    if (updates.monthlyBudget !== undefined) body.monthly_budget = updates.monthlyBudget;
+    if (Object.keys(body).length) {
+      apiFetch('/api/v1/profile', { method: 'PATCH', body: JSON.stringify(body) }).catch(
+        () => {}
+      );
+    }
+  },
+
+  clearNewBadges: () => set({ newBadges: [] }),
+
+  unlockBadge: (badgeId) => {
+    const { profile } = get();
+    if (profile.badges.find((b) => b.id === badgeId)?.unlockedAt) return;
+    set({
+      profile: { ...profile, badges: [...profile.badges, badgeIdToBadge(badgeId)] },
+    });
+  },
+}));

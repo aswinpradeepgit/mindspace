@@ -172,9 +172,9 @@ function AuthForm() {
         {info && <p className="text-xs text-emerald-600 text-center leading-relaxed">{info}</p>}
       </motion.div>
 
-      <Link href="/" className="block text-center text-xs text-slate-500 mt-6">
-        Skip for now — explore offline →
-      </Link>
+      <p className="text-center text-[11px] text-slate-400 mt-6 px-8 leading-relaxed">
+        Your data syncs securely to your account across all your devices.
+      </p>
     </div>
   );
 }
