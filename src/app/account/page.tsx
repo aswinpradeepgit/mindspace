@@ -84,11 +84,10 @@ function AuthForm() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center pt-10 pb-8"
+        className="text-center pt-14 pb-9"
       >
-        <div className="text-6xl mb-3 float-anim">🪙</div>
-        <h1 className="text-3xl font-bold gradient-text">MindSpend</h1>
-        <p className="text-slate-600 text-sm mt-2 px-6">
+        <h1 className="text-4xl font-bold gradient-text tracking-tight">MindSpend</h1>
+        <p className="text-slate-600 text-sm mt-3 px-6">
           Spend with awareness. Save more, feel better.
         </p>
       </motion.div>
