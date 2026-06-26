@@ -1,6 +1,7 @@
-import { Expense, Nudge } from '@/types';
+import { CustomCategory, Expense, Nudge } from '@/types';
+import { resolveCategory } from '@/lib/categories';
 
-export function detectPatterns(expenses: Expense[]): Nudge[] {
+export function detectPatterns(expenses: Expense[], customCategories: CustomCategory[] = []): Nudge[] {
   const nudges: Nudge[] = [];
   const now = new Date();
 
@@ -57,7 +58,7 @@ export function detectPatterns(expenses: Expense[]): Nudge[] {
     if (dominated) {
       const pct = Math.round((dominated[1] / total) * 100);
       nudges.push({
-        message: `${dominated[0].charAt(0).toUpperCase() + dominated[0].slice(1)} is taking ${pct}% of your monthly spend. Consider diversifying your budget.`,
+        message: `${resolveCategory(dominated[0], customCategories).label} is taking ${pct}% of your monthly spend. Consider diversifying your budget.`,
         type: 'insight',
         trigger: 'category_dominance',
       });

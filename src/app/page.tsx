@@ -27,7 +27,10 @@ export default function DashboardPage() {
     [expenses, today, profile.monthlyBudget]
   );
 
-  const nudges = useMemo(() => detectPatterns(expenses), [expenses]);
+  const nudges = useMemo(
+    () => detectPatterns(expenses, profile.customCategories),
+    [expenses, profile.customCategories]
+  );
   const recentExpenses = expenses.slice(0, 10);
 
   const totalThisMonth = useMemo(() => {
