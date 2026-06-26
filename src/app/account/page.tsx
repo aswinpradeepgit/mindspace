@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { signInWithGoogle } from '@/lib/nativeAuth';
 import { apiFetch } from '@/lib/api';
 
 export default function AccountPage() {
@@ -49,11 +50,8 @@ function AuthForm() {
 
   const google = async () => {
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
-    });
-    if (error) setError(error.message);
+    const { error } = await signInWithGoogle();
+    if (error) setError(error);
   };
 
   const submitEmail = async () => {
