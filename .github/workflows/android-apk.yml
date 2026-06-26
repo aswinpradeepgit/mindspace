@@ -37,6 +37,13 @@ jobs:
 
       - name: Build web + sync Capacitor
         run: npm run android:sync
+        env:
+          # NEXT_PUBLIC_* values are baked into the client bundle and are public
+          # by design (the publishable key is safe to ship). The CI build needs
+          # them because .env.local is gitignored.
+          NEXT_PUBLIC_SUPABASE_URL: https://pjfrwcvpbcgpslsnzrfi.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_1wzt4TPldkuS_H_yjJvagQ_QGC2-Ohs
+          NEXT_PUBLIC_API_URL: https://mindspend-api.onrender.com
 
       - name: Build debug APK
         working-directory: android
