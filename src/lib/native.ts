@@ -43,13 +43,15 @@ export async function hapticSuccess() {
 export async function initNative() {
   if (!isNative()) return;
 
-  // Status bar: dark icons on our light background, matching the theme.
+  // Edge-to-edge: let the webview draw *behind* the status bar so the gradient
+  // fills the notch area. Dark icons on our light background. CSS safe-area
+  // insets (globals.css / BottomNav) keep content clear of the status/nav bars.
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
+    await StatusBar.setOverlaysWebView({ overlay: true });
     await StatusBar.setStyle({ style: Style.Light }); // Light = dark text/icons
-    await StatusBar.setBackgroundColor({ color: '#fdf7ff' });
   } catch {
-    /* ignore (e.g. iOS doesn't support setBackgroundColor) */
+    /* ignore (e.g. iOS differences) */
   }
 
   // Hide the native splash once the web app is ready.

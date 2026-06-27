@@ -39,6 +39,25 @@ export async function registerPush(): Promise<void> {
       registered = false;
     });
 
+    // When the app is in the FOREGROUND, Android delivers the message silently
+    // (no system banner) — show it ourselves via a local notification.
+    await PushNotifications.addListener('pushNotificationReceived', async (notif) => {
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Math.floor(Math.random() * 1_000_000),
+              title: notif.title ?? 'MindSpend',
+              body: notif.body ?? '',
+            },
+          ],
+        });
+      } catch {
+        /* local-notifications unavailable — ignore */
+      }
+    });
+
     // Tapping a notification opens the app; route by type when present.
     await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       const type = action.notification?.data?.type;

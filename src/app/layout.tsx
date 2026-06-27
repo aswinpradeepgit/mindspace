@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -23,6 +23,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'MindSpend — Gamified Finance Tracker',
   description: 'Track expenses, understand emotions, build wealth.',
+};
+
+// viewport-fit: cover → the app draws into the notch/safe areas; we then pad
+// content with env(safe-area-inset-*) (see globals.css / BottomNav).
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#fdf7ff',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
