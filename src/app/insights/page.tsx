@@ -8,6 +8,7 @@ import { CategoryDonut } from '@/components/insights/CategoryDonut';
 import { NudgeAlert } from '@/components/insights/NudgeAlert';
 import { EducationTip } from '@/components/insights/EducationTip';
 import { AICoachCard } from '@/components/insights/AICoachCard';
+import { ExplainMonthCard } from '@/components/insights/ExplainMonthCard';
 import { buildWeeklySummary, buildMonthlySummary } from '@/lib/insights/summaries';
 import { selectTip } from '@/lib/insights/education';
 import { formatMoney, currencySymbol, CURRENCIES } from '@/lib/money';
@@ -131,9 +132,15 @@ export default function InsightsPage() {
         </motion.div>
       )}
 
-      {/* AI Coach */}
+      {/* AI Coach + Explain my month */}
       {expenses.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-5"
+        >
+          <ExplainMonthCard />
           <AICoachCard />
         </motion.div>
       )}
