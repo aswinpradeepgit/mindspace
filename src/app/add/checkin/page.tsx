@@ -50,25 +50,21 @@ export default function CheckInPage() {
     if (step === 'intent') { setStep('emotion'); return; }
     if (step === 'emotion') { setStep('reflect'); return; }
     if (step === 'reflect') {
+      // Optimistic: jump to the dashboard immediately and save in the background.
+      // The new expense, XP and any badge/level-up celebration roll in when the
+      // request resolves — no waiting on the network round-trip.
       setSubmitting(true);
-      try {
-        await addExpense({
-          ...(draft as any),
-          checkIn: {
-            emotion: emotion!,
-            intent: intent!,
-            regret,
-            wouldSpendLess,
-          },
-        });
-        hapticMedium();
-        toast.success('Expense logged! 🎉', { description: 'XP earned for tracking mindfully.' });
-        router.push('/');
-      } catch {
-        toast.error("Couldn't save — check your connection and try again.");
-      } finally {
-        setSubmitting(false);
-      }
+      const payload = {
+        ...(draft as any),
+        checkIn: { emotion: emotion!, intent: intent!, regret, wouldSpendLess },
+      };
+      hapticMedium();
+      router.push('/');
+      addExpense(payload)
+        .then(() =>
+          toast.success('Expense logged! 🎉', { description: 'XP earned for tracking mindfully.' })
+        )
+        .catch(() => toast.error("Couldn't save — check your connection and try again."));
     }
   };
 
