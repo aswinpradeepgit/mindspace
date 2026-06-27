@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "446849561720",
+    "project_id": "mindspend-4b74b",
+    "storage_bucket": "mindspend-4b74b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446849561720:android:d57ae1777954af5058298d",
+        "android_client_info": {
+          "package_name": "com.mindspend.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5nqJFykb57pfI5Zfcx0a_d8SOamMSUIg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
