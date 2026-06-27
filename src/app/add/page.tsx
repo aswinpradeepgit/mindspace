@@ -17,6 +17,7 @@ interface ParseResult {
   description: string;
   emotion: Emotion | null;
   intent: SpendIntent | null;
+  ai_used: boolean;
 }
 
 export default function AddExpensePage() {
@@ -44,7 +45,14 @@ export default function AddExpensePage() {
       if (r.category) setCategory(r.category);
       setAiEmotion(r.emotion);
       setAiIntent(r.intent);
-      toast.success('Filled from your words ✨ — review & continue');
+      if (r.ai_used) {
+        toast.success('Filled from your words ✨ — review & continue');
+      } else if (r.amount > 0 || r.description) {
+        // Regex fallback (AI busy / unavailable) still pre-filled the basics.
+        toast('AI is busy — filled what I could. Please review & adjust.');
+      } else {
+        toast.error("Couldn't read that — try rephrasing or fill it manually.");
+      }
     } catch {
       toast.error("Couldn't read that — try rephrasing or fill it manually.");
     } finally {
