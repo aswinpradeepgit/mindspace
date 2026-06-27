@@ -123,6 +123,31 @@
   }
 }
 
+/* Shimmering skeleton placeholder */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(124, 92, 255, 0.08);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: skeleton-shimmer 1.4s infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Soft frosted card utility (playful light) */
 .glass {
   background: var(--glass-bg);

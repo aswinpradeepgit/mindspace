@@ -16,9 +16,10 @@ import { buildDailySummary } from '@/lib/insights/summaries';
 import { detectPatterns } from '@/lib/insights/patterns';
 import { totalSaved } from '@/lib/insights/savings';
 import { formatMoney } from '@/lib/money';
+import { DashboardSkeleton } from '@/components/layout/DashboardSkeleton';
 
 export default function DashboardPage() {
-  const { expenses, profile } = useExpenseStore();
+  const { expenses, profile, hydrated } = useExpenseStore();
   const levelInfo = getLevelInfo(profile.level);
 
   const today = new Date().toISOString().split('T')[0];
@@ -41,6 +42,8 @@ export default function DashboardPage() {
   }, [expenses, today]);
 
   const saved = useMemo(() => totalSaved(expenses, profile), [expenses, profile]);
+
+  if (!hydrated) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-5">
