@@ -10,6 +10,7 @@ import { EducationTip } from '@/components/insights/EducationTip';
 import { AICoachCard } from '@/components/insights/AICoachCard';
 import { ExplainMonthCard } from '@/components/insights/ExplainMonthCard';
 import { ShareRecap } from '@/components/insights/ShareRecap';
+import { AnomalyCard } from '@/components/insights/AnomalyCard';
 import { buildWeeklySummary, buildMonthlySummary } from '@/lib/insights/summaries';
 import { selectTip } from '@/lib/insights/education';
 import { formatMoney, currencySymbol, CURRENCIES } from '@/lib/money';
@@ -61,6 +62,9 @@ export default function InsightsPage() {
         <h1 className="text-2xl font-bold text-slate-900">Insights</h1>
         <p className="text-slate-600 text-sm">Your spending story, decoded.</p>
       </motion.div>
+
+      {/* Anomalies — most actionable, surfaced first */}
+      {expenses.length > 0 && <AnomalyCard />}
 
       {/* Tabs */}
       <div className="glass flex p-1 gap-1">
