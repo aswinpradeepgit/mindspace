@@ -9,6 +9,7 @@ import { NudgeAlert } from '@/components/insights/NudgeAlert';
 import { EducationTip } from '@/components/insights/EducationTip';
 import { AICoachCard } from '@/components/insights/AICoachCard';
 import { ExplainMonthCard } from '@/components/insights/ExplainMonthCard';
+import { ShareRecap } from '@/components/insights/ShareRecap';
 import { buildWeeklySummary, buildMonthlySummary } from '@/lib/insights/summaries';
 import { selectTip } from '@/lib/insights/education';
 import { formatMoney, currencySymbol, CURRENCIES } from '@/lib/money';
@@ -141,6 +142,7 @@ export default function InsightsPage() {
           className="space-y-5"
         >
           <ExplainMonthCard />
+          <ShareRecap />
           <AICoachCard />
         </motion.div>
       )}
