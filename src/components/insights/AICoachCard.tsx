@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
 import { apiFetch } from '@/lib/api';
@@ -132,13 +133,21 @@ export function AICoachCard() {
         ))}
       </div>
 
-      <button
-        onClick={() => load(true)}
-        disabled={loading}
-        className="w-full text-[11px] text-purple-600 font-medium py-1.5 disabled:opacity-50"
-      >
-        {loading ? 'Refreshing…' : '↻ Refresh coaching'}
-      </button>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/coach"
+          className="flex-1 text-center text-xs font-semibold text-white bg-purple-600 hover:bg-purple-500 rounded-xl py-2 transition-all"
+        >
+          💬 Ask your coach
+        </Link>
+        <button
+          onClick={() => load(true)}
+          disabled={loading}
+          className="text-[11px] text-purple-600 font-medium px-3 py-2 disabled:opacity-50"
+        >
+          {loading ? 'Refreshing…' : '↻ Refresh'}
+        </button>
+      </div>
     </div>
   );
 }
