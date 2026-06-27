@@ -24,8 +24,9 @@ export default function CheckInPage() {
   const custom = useExpenseStore((s) => s.profile.customCategories ?? []);
 
   const [step, setStep] = useState<Step>('intent');
-  const [intent, setIntent] = useState<SpendIntent | null>(null);
-  const [emotion, setEmotion] = useState<Emotion | null>(null);
+  // Pre-fill from the AI quick-add, if present.
+  const [intent, setIntent] = useState<SpendIntent | null>(draft?.checkIn?.intent ?? null);
+  const [emotion, setEmotion] = useState<Emotion | null>(draft?.checkIn?.emotion ?? null);
   const [regret, setRegret] = useState<boolean | null>(null);
   const [wouldSpendLess, setWouldSpendLess] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);

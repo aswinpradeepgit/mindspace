@@ -3,10 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Category } from '@/types';
+import { toast } from 'sonner';
+import { Category, Emotion, SpendIntent } from '@/types';
 import { CategoryPicker } from '@/components/expense/CategoryPicker';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
 import { currencySymbol } from '@/lib/money';
+import { apiFetch } from '@/lib/api';
+import { NaturalLanguageBox } from '@/components/expense/NaturalLanguageBox';
+
+interface ParseResult {
+  amount: number;
+  category: string;
+  description: string;
+  emotion: Emotion | null;
+  intent: SpendIntent | null;
+}
 
 export default function AddExpensePage() {
   const router = useRouter();
@@ -16,6 +27,30 @@ export default function AddExpensePage() {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
+  // Emotion/intent the AI inferred — pre-fills the check-in step.
+  const [aiEmotion, setAiEmotion] = useState<Emotion | null>(null);
+  const [aiIntent, setAiIntent] = useState<SpendIntent | null>(null);
+  const [parsing, setParsing] = useState(false);
+
+  const handleParse = async (text: string) => {
+    setParsing(true);
+    try {
+      const r = await apiFetch<ParseResult>('/api/v1/expenses/parse', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      if (r.amount > 0) setAmount((r.amount / 100).toString());
+      if (r.description) setDescription(r.description);
+      if (r.category) setCategory(r.category);
+      setAiEmotion(r.emotion);
+      setAiIntent(r.intent);
+      toast.success('Filled from your words ✨ — review & continue');
+    } catch {
+      toast.error("Couldn't read that — try rephrasing or fill it manually.");
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const handleAmountInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9.]/g, '');
@@ -32,6 +67,10 @@ export default function AddExpensePage() {
       category,
       date: today,
       currency,
+      // Pre-fill the check-in if the AI inferred mood/intent.
+      ...(aiEmotion || aiIntent
+        ? { checkIn: { emotion: aiEmotion as Emotion, intent: aiIntent as SpendIntent, regret: null, wouldSpendLess: null } }
+        : {}),
     });
     router.push('/add/checkin');
   };
@@ -48,6 +87,9 @@ export default function AddExpensePage() {
         <h1 className="text-2xl font-bold text-slate-900">Add Expense</h1>
         <p className="text-slate-600 text-sm">Track what you spend, understand why.</p>
       </div>
+
+      {/* Natural-language quick add */}
+      <NaturalLanguageBox onParse={handleParse} parsing={parsing} />
 
       {/* Amount */}
       <div className="glass p-6 text-center space-y-2">
