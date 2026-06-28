@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { signInWithGoogle } from '@/lib/nativeAuth';
 import { apiFetch } from '@/lib/api';
+import { BadgeGrid } from '@/components/gamification/BadgeGrid';
 
 export default function AccountPage() {
   const { user, loading, signOut } = useAuth();
@@ -212,6 +213,12 @@ function SignedIn({ email, onSignOut }: { email: string; onSignOut: () => void }
         >
           Sign out
         </button>
+      </div>
+
+      {/* Badges (gamification trophy case lives here now) */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold text-slate-900">🏆 Your badges</h3>
+        <BadgeGrid />
       </div>
 
       <div className="glass p-4 space-y-3">

@@ -42,7 +42,7 @@ const SIDE_ITEMS = [
   { href: '/', label: 'Home', icon: '🏠' },
   { href: '/insights', label: 'Insights', icon: '📊' },
   { href: '/goals', label: 'Goals', icon: '🎯' },
-  { href: '/leaderboard', label: 'Badges', icon: '🏆' },
+  { href: '/journal', label: 'Journal', icon: '📖' },
 ];
 
 export function BottomNav() {
