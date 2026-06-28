@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { SavingsGoal } from '@/types';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
-import { formatMoney } from '@/lib/money';
+import { formatMoney, currencySymbol } from '@/lib/money';
+import { hapticSuccess } from '@/lib/native';
 
 const CIRCLE_R = 40;
 const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_R;
@@ -14,7 +17,25 @@ interface Props {
 
 export function GoalCard({ goal }: Props) {
   const deleteGoal = useExpenseStore((s) => s.deleteGoal);
+  const updateGoal = useExpenseStore((s) => s.updateGoal);
   const currency = useExpenseStore((s) => s.profile.currency);
+  const [add, setAdd] = useState('');
+
+  const contribute = () => {
+    const v = parseFloat(add);
+    if (!v || v <= 0) return;
+    const next = goal.currentAmount + Math.round(v * 100);
+    hapticSuccess();
+    if (next >= goal.targetAmount) {
+      updateGoal(goal.id, { currentAmount: goal.targetAmount, completedAt: new Date().toISOString() });
+      toast.success(`🎉 ${goal.name} reached!`);
+    } else {
+      updateGoal(goal.id, { currentAmount: next });
+      toast.success(`Added ${formatMoney(Math.round(v * 100), currency)} to ${goal.name}`);
+    }
+    setAdd('');
+  };
+
   const progress = Math.min(goal.currentAmount / goal.targetAmount, 1);
   const remaining = goal.targetAmount - goal.currentAmount;
   const daysLeft = Math.max(
@@ -80,6 +101,27 @@ export function GoalCard({ goal }: Props) {
           </div>
         </div>
       </div>
+
+      {!isCompleted && (
+        <div className="flex gap-2">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={add}
+            onChange={(e) => setAdd(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && contribute()}
+            placeholder={`Add savings (${currencySymbol(currency)})`}
+            className="flex-1 bg-white px-3 py-2 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none focus:border-purple-300 placeholder:text-slate-400"
+          />
+          <button
+            onClick={contribute}
+            disabled={!add || parseFloat(add) <= 0}
+            className="px-4 rounded-xl text-sm font-semibold bg-purple-600 text-white disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-400">Target: {new Date(goal.targetDate).toLocaleDateString()}</p>
