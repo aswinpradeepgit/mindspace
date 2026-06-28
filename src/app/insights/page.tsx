@@ -11,6 +11,7 @@ import { AICoachCard } from '@/components/insights/AICoachCard';
 import { ExplainMonthCard } from '@/components/insights/ExplainMonthCard';
 import { ShareRecap } from '@/components/insights/ShareRecap';
 import { AnomalyCard } from '@/components/insights/AnomalyCard';
+import { ProactiveInsights } from '@/components/insights/ProactiveInsights';
 import { buildWeeklySummary, buildMonthlySummary } from '@/lib/insights/summaries';
 import { selectTip } from '@/lib/insights/education';
 import { formatMoney, currencySymbol, CURRENCIES } from '@/lib/money';
@@ -65,6 +66,9 @@ export default function InsightsPage() {
 
       {/* Anomalies — most actionable, surfaced first */}
       {expenses.length > 0 && <AnomalyCard />}
+
+      {/* Forecast · goals · recurring · budget suggestions */}
+      {expenses.length > 0 && <ProactiveInsights />}
 
       {/* Tabs */}
       <div className="glass flex p-1 gap-1">
