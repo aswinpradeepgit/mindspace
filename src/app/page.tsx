@@ -58,6 +58,12 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold gradient-text">{profile.name}</h1>
         </div>
         <div className="flex items-center gap-2">
+          <div
+            className="h-10 px-3 rounded-xl flex items-center justify-center text-sm font-bold"
+            style={{ background: levelInfo.color + '30', color: levelInfo.color, border: `1px solid ${levelInfo.color}50` }}
+          >
+            Lv {profile.level}
+          </div>
           <Link
             href="/account"
             aria-label="Account"
@@ -65,12 +71,6 @@ export default function DashboardPage() {
           >
             👤
           </Link>
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
-            style={{ background: levelInfo.color + '30', color: levelInfo.color, border: `1px solid ${levelInfo.color}50` }}
-          >
-            {profile.level}
-          </div>
         </div>
       </motion.div>
 

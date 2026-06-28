@@ -32,13 +32,21 @@ export function CategoryDonut({ expenses }: Props) {
     for (const e of expenses) {
       totals[e.category] = (totals[e.category] ?? 0) + e.amount;
     }
+    // Distinct, vibrant color per slice. Built-in categories carry Tailwind
+    // classes (not hex), so we assign from a palette by rank; custom categories
+    // keep their own hex color when set.
+    const PALETTE = ['#7c3aed', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#6366f1', '#ef4444', '#84cc16'];
     return Object.entries(totals)
       .filter(([, v]) => v > 0)
       .map(([key, value]) => {
         const cfg = resolveCategory(key, custom);
-        return { name: cfg.label, value, color: cfg.color, icon: cfg.icon };
+        return { name: cfg.label, value, raw: cfg.color, icon: cfg.icon };
       })
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .map((d, i) => ({
+        ...d,
+        color: typeof d.raw === 'string' && d.raw.startsWith('#') ? d.raw : PALETTE[i % PALETTE.length],
+      }));
   }, [expenses, custom]);
 
   const CustomTooltip = useMemo(() => makeTooltip(currency), [currency]);

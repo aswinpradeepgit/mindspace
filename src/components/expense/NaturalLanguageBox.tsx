@@ -8,22 +8,81 @@ interface Props {
   parsing: boolean;
 }
 
-/** "Type or speak" quick-add box. Voice uses the Web Speech API where available. */
+/** "Type or speak" quick-add box.
+ *  Native (Capacitor): press-and-hold the mic — uses the native speech recognizer
+ *  (requests mic permission). Web: tap the mic — uses the Web Speech API. */
 export function NaturalLanguageBox({ onParse, parsing }: Props) {
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
+  const [native, setNative] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
-  const recognitionRef = useRef<unknown>(null);
+  const transcriptRef = useRef('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const webRec = useRef<any>(null);
 
   useEffect(() => {
-    const SR =
-      (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown })
-        .SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
-    if (SR) setVoiceSupported(true);
+    (async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          setNative(true);
+          setVoiceSupported(true);
+          return;
+        }
+      } catch {
+        /* web */
+      }
+      const SR =
+        (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown })
+          .SpeechRecognition ||
+        (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+      if (SR) setVoiceSupported(true);
+    })();
   }, []);
 
-  const startVoice = () => {
+  // ── Native: press-and-hold ──────────────────────────────────────────────
+  const startNative = async () => {
+    try {
+      const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+      const perm = await SpeechRecognition.checkPermissions();
+      if (perm.speechRecognition !== 'granted') {
+        const req = await SpeechRecognition.requestPermissions();
+        if (req.speechRecognition !== 'granted') return;
+      }
+      transcriptRef.current = '';
+      setText('');
+      setListening(true);
+      await SpeechRecognition.removeAllListeners();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await SpeechRecognition.addListener('partialResults', (data: any) => {
+        const m = data?.matches?.[0];
+        if (m) {
+          transcriptRef.current = m;
+          setText(m);
+        }
+      });
+      await SpeechRecognition.start({ language: 'en-IN', partialResults: true, popup: false });
+    } catch {
+      setListening(false);
+    }
+  };
+
+  const stopNative = async () => {
+    if (!listening) return;
+    setListening(false);
+    try {
+      const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+      await SpeechRecognition.stop();
+      await SpeechRecognition.removeAllListeners();
+    } catch {
+      /* ignore */
+    }
+    const said = transcriptRef.current.trim();
+    if (said) onParse(said);
+  };
+
+  // ── Web: tap to dictate ─────────────────────────────────────────────────
+  const startWeb = () => {
     const SR =
       (window as unknown as { SpeechRecognition?: new () => unknown; webkitSpeechRecognition?: new () => unknown })
         .SpeechRecognition ||
@@ -33,7 +92,6 @@ export function NaturalLanguageBox({ onParse, parsing }: Props) {
     const rec: any = new (SR as new () => unknown)();
     rec.lang = 'en-IN';
     rec.interimResults = false;
-    rec.maxAlternatives = 1;
     rec.onresult = (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => {
       const said = e.results[0][0].transcript;
       setText(said);
@@ -41,7 +99,7 @@ export function NaturalLanguageBox({ onParse, parsing }: Props) {
     };
     rec.onend = () => setListening(false);
     rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
+    webRec.current = rec;
     setListening(true);
     rec.start();
   };
@@ -49,6 +107,21 @@ export function NaturalLanguageBox({ onParse, parsing }: Props) {
   const submit = () => {
     if (text.trim()) onParse(text.trim());
   };
+
+  // Press-and-hold handlers (native only).
+  const holdProps = native
+    ? {
+        onPointerDown: (e: React.PointerEvent) => {
+          e.preventDefault();
+          startNative();
+        },
+        onPointerUp: () => stopNative(),
+        onPointerLeave: () => stopNative(),
+        onPointerCancel: () => stopNative(),
+        onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+        style: { touchAction: 'none' as const },
+      }
+    : { onClick: startWeb };
 
   return (
     <div className="glass p-4 space-y-3 border border-purple-500/20">
@@ -66,24 +139,28 @@ export function NaturalLanguageBox({ onParse, parsing }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder={listening ? 'Listening…' : 'Type or tap the mic'}
+          placeholder={listening ? 'Listening…' : native ? 'Type or hold the mic' : 'Type or tap the mic'}
           className="flex-1 bg-white px-3 py-2.5 text-sm text-slate-900 rounded-xl border border-purple-100 outline-none focus:border-purple-300 placeholder:text-slate-400"
         />
         {voiceSupported && (
           <motion.button
             type="button"
             whileTap={{ scale: 0.9 }}
-            onClick={startVoice}
             disabled={parsing}
-            className={`w-11 rounded-xl flex items-center justify-center text-lg transition-all ${
+            aria-label={native ? 'Hold to speak' : 'Speak'}
+            className={`w-11 rounded-xl flex items-center justify-center text-lg transition-all select-none ${
               listening ? 'bg-red-500 text-white animate-pulse' : 'bg-purple-50 text-purple-600'
             }`}
-            aria-label="Speak"
+            {...holdProps}
           >
             🎙️
           </motion.button>
         )}
       </div>
+
+      {native && (
+        <p className="text-[10px] text-slate-400 -mt-1">Hold the mic and speak, release when done.</p>
+      )}
 
       <motion.button
         type="button"

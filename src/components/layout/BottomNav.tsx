@@ -11,11 +11,29 @@ import { hapticLight } from '@/lib/native';
 function useKeyboardOpen() {
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => setOpen(window.innerHeight - vv.height > 150);
-    vv.addEventListener('resize', onResize);
-    return () => vv.removeEventListener('resize', onResize);
+    const cleanups: Array<() => void> = [];
+    (async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (Capacitor.isNativePlatform()) {
+          // Native: the Keyboard plugin fires reliable show/hide events.
+          const { Keyboard } = await import('@capacitor/keyboard');
+          const show = await Keyboard.addListener('keyboardWillShow', () => setOpen(true));
+          const hide = await Keyboard.addListener('keyboardWillHide', () => setOpen(false));
+          cleanups.push(() => show.remove(), () => hide.remove());
+          return;
+        }
+      } catch {
+        /* fall through to web */
+      }
+      const vv = window.visualViewport;
+      if (vv) {
+        const onResize = () => setOpen(window.innerHeight - vv.height > 150);
+        vv.addEventListener('resize', onResize);
+        cleanups.push(() => vv.removeEventListener('resize', onResize));
+      }
+    })();
+    return () => cleanups.forEach((fn) => fn());
   }, []);
   return open;
 }
@@ -46,8 +64,8 @@ export function BottomNav() {
         onClick={() => hapticLight()}
         className="flex flex-col items-center gap-1 w-16 py-1"
       >
-        <span className={`text-xl ${active ? '' : 'opacity-60'}`}>{icon}</span>
-        <span className={`text-[10px] font-medium ${active ? 'text-purple-600' : 'text-slate-400'}`}>
+        <span className="text-xl">{icon}</span>
+        <span className={`text-[10px] font-medium ${active ? 'text-purple-600' : 'text-slate-500'}`}>
           {label}
         </span>
       </Link>
