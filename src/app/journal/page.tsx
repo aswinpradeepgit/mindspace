@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useExpenseStore } from '@/hooks/useExpenseStore';
+import { apiFetch } from '@/lib/api';
 import { formatMoney } from '@/lib/money';
 import { resolveCategory } from '@/lib/categories';
 import type { Emotion, Expense } from '@/types';
@@ -32,6 +33,13 @@ export default function JournalPage() {
   const { expenses, profile } = useExpenseStore();
   const [offset, setOffset] = useState(0); // months back from current
   const [selected, setSelected] = useState<string | null>(null);
+  const [persona, setPersona] = useState<{ archetype: string; emoji: string; why: string } | null>(null);
+
+  useEffect(() => {
+    apiFetch<{ archetype: string; emoji: string; why: string }>('/api/v1/insights/personality')
+      .then(setPersona)
+      .catch(() => setPersona(null));
+  }, []);
 
   const now = new Date();
   const view = new Date(now.getFullYear(), now.getMonth() + offset, 1);
@@ -86,6 +94,24 @@ export default function JournalPage() {
         <h1 className="text-2xl font-bold text-slate-900">Journal</h1>
         <p className="text-slate-600 text-sm">Your month in moods. Tap a day to revisit it.</p>
       </motion.div>
+
+      {/* Money Personality — evolving AI archetype */}
+      {persona && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-2xl p-4 text-white shadow-lg shadow-purple-500/20"
+          style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)' }}
+        >
+          <p className="text-[11px] uppercase tracking-wide text-white/80">Your money personality</p>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-4xl">{persona.emoji}</span>
+            <h2 className="text-xl font-extrabold">{persona.archetype}</h2>
+          </div>
+          {persona.why && <p className="text-[13px] text-white/90 mt-2 leading-relaxed">{persona.why}</p>}
+          <p className="text-[10px] text-white/70 mt-2">✨ Evolves as your habits change</p>
+        </motion.div>
+      )}
 
       <div className="glass p-4 space-y-3">
         {/* Month nav */}
