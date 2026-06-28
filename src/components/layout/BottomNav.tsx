@@ -20,35 +20,11 @@ function useKeyboardOpen() {
   return open;
 }
 
-type IconProps = { className?: string };
-const I = {
-  home: (p: IconProps) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}>
-      <path d="M3 11l9-8 9 8" /><path d="M5 10v10h5v-6h4v6h5V10" />
-    </svg>
-  ),
-  insights: (p: IconProps) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}>
-      <path d="M5 20V11" /><path d="M12 20V4" /><path d="M19 20v-6" />
-    </svg>
-  ),
-  goals: (p: IconProps) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}>
-      <circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r="0.5" fill="currentColor" />
-    </svg>
-  ),
-  badges: (p: IconProps) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={p.className}>
-      <circle cx="12" cy="9" r="5" /><path d="M9 13l-1.5 8 4.5-2.8L16.5 21 15 13" />
-    </svg>
-  ),
-};
-
 const SIDE_ITEMS = [
-  { href: '/', label: 'Home', Icon: I.home },
-  { href: '/insights', label: 'Insights', Icon: I.insights },
-  { href: '/goals', label: 'Goals', Icon: I.goals },
-  { href: '/leaderboard', label: 'Badges', Icon: I.badges },
+  { href: '/', label: 'Home', icon: '🏠' },
+  { href: '/insights', label: 'Insights', icon: '📊' },
+  { href: '/goals', label: 'Goals', icon: '🎯' },
+  { href: '/leaderboard', label: 'Badges', icon: '🏆' },
 ];
 
 export function BottomNav() {
@@ -62,7 +38,7 @@ export function BottomNav() {
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
 
-  const NavItem = ({ href, label, Icon }: (typeof SIDE_ITEMS)[number]) => {
+  const NavItem = ({ href, label, icon }: (typeof SIDE_ITEMS)[number]) => {
     const active = isActive(href);
     return (
       <Link
@@ -70,7 +46,7 @@ export function BottomNav() {
         onClick={() => hapticLight()}
         className="flex flex-col items-center gap-1 w-16 py-1"
       >
-        <Icon className={`w-6 h-6 ${active ? 'text-purple-600' : 'text-slate-400'}`} />
+        <span className={`text-xl ${active ? '' : 'opacity-60'}`}>{icon}</span>
         <span className={`text-[10px] font-medium ${active ? 'text-purple-600' : 'text-slate-400'}`}>
           {label}
         </span>
