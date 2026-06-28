@@ -11,6 +11,7 @@ import { ExpenseCard } from '@/components/expense/ExpenseCard';
 import { NudgeAlert } from '@/components/insights/NudgeAlert';
 import { EducationTip } from '@/components/insights/EducationTip';
 import { AICoachCard } from '@/components/insights/AICoachCard';
+import { CommitmentsDashCard } from '@/components/layout/CommitmentsDashCard';
 import { getLevelInfo } from '@/lib/gamification/levels';
 import { buildDailySummary } from '@/lib/insights/summaries';
 import { detectPatterns } from '@/lib/insights/patterns';
@@ -130,6 +131,11 @@ export default function DashboardPage() {
           </p>
         </motion.div>
       )}
+
+      {/* EMIs & subscriptions entry */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12 }}>
+        <CommitmentsDashCard />
+      </motion.div>
 
       {/* Daily Quests — the dopamine loop */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.13 }}>
