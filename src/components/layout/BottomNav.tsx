@@ -1,9 +1,24 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { hapticLight } from '@/lib/native';
+
+/** True while the on-screen keyboard is open (viewport shrinks). Lets us hide
+ *  the fixed bottom nav so it doesn't float up over the content. */
+function useKeyboardOpen() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => setOpen(window.innerHeight - vv.height > 150);
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
+  return open;
+}
 
 const NAV_ITEMS = [
   { href: '/', icon: '🏠', label: 'Home' },
@@ -15,10 +30,11 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const keyboardOpen = useKeyboardOpen();
 
   // The account / login page is a full-screen surface with its own back link —
-  // no bottom nav there.
-  if (pathname.startsWith('/account')) return null;
+  // no bottom nav there. Also hide while typing so it doesn't obstruct inputs.
+  if (pathname.startsWith('/account') || keyboardOpen) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">

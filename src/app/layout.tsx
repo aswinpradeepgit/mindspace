@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-screen text-slate-900 pb-24">
+      <body className="min-h-screen text-slate-900 pb-[calc(7rem+env(safe-area-inset-bottom))]">
         <AuthProvider>
           <HydrateStore />
           <NativeInit />

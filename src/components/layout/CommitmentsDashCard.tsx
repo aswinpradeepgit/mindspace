@@ -23,22 +23,28 @@ export function CommitmentsDashCard() {
       .catch(() => setTotal(0));
   }, []);
 
+  const hasData = total != null && total > 0;
   return (
-    <Link href="/commitments" className="glass p-4 flex items-center justify-between border border-purple-500/15">
+    <Link
+      href="/commitments"
+      className="flex items-center justify-between rounded-2xl p-4 text-white shadow-lg shadow-purple-500/20"
+      style={{ background: 'linear-gradient(120deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%)' }}
+    >
       <div className="flex items-center gap-3">
-        <span className="text-xl">💳</span>
+        <span className="text-2xl">💳</span>
         <div>
-          <p className="text-sm font-semibold text-slate-900">EMIs &amp; Subscriptions</p>
-          <p className="text-[11px] text-slate-500">
-            {total && total > 0
-              ? `${formatMoney(total, currency, { whole: true })}/mo committed${
-                  pct ? ` · ${pct}% of budget` : ''
-                }`
-              : 'Add what you pay every month →'}
-          </p>
+          <p className="text-sm font-bold">EMIs &amp; Subscriptions</p>
+          {hasData ? (
+            <p className="text-[12px] text-white/90">
+              <span className="font-semibold">{formatMoney(total, currency, { whole: true })}/mo</span>{' '}
+              committed{pct ? ` · ${pct}% of budget` : ''}
+            </p>
+          ) : (
+            <p className="text-[12px] text-white/90">Track your loans &amp; subscriptions →</p>
+          )}
         </div>
       </div>
-      <span className="text-slate-400">›</span>
+      <span className="text-white/80 text-lg">›</span>
     </Link>
   );
 }

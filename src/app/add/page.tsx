@@ -100,6 +100,9 @@ export default function AddExpensePage() {
       {/* Natural-language quick add */}
       <NaturalLanguageBox onParse={handleParse} parsing={parsing} />
 
+      {/* Recurring commitments entry — prominent, high-visibility */}
+      <CommitmentsDashCard />
+
       {/* Amount */}
       <div className="glass p-6 text-center space-y-2">
         <p className="text-sm text-slate-600">Amount</p>
@@ -158,9 +161,6 @@ export default function AddExpensePage() {
       >
         Next: Check In →
       </motion.button>
-
-      {/* Recurring commitments entry */}
-      <CommitmentsDashCard />
     </motion.div>
   );
 }
