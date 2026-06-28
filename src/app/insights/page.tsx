@@ -127,32 +127,23 @@ export default function InsightsPage() {
         )}
       </div>
 
-      {/* Chart */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+      {/* Spending breakdown (collapsible) */}
+      <Section title="📊 Spending breakdown">
         <SpendingChart expenses={expenses} days={tab === 'week' ? 7 : 30} />
-      </motion.div>
-
-      {/* Donut */}
-      {expenses.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+        {expenses.length > 0 && (
           <CategoryDonut
             expenses={expenses.filter((e) => e.date.startsWith(tab === 'week' ? weekStart.slice(0, 7) : month))}
           />
-        </motion.div>
-      )}
+        )}
+      </Section>
 
-      {/* AI Coach + Explain my month */}
+      {/* AI deep-dive (collapsible) */}
       {expenses.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-5"
-        >
+        <Section title="🤖 Explain my month · coach · recap">
           <ExplainMonthCard />
           <ShareRecap />
           <AICoachCard />
-        </motion.div>
+        </Section>
       )}
 
       {/* Nudges */}
@@ -162,58 +153,84 @@ export default function InsightsPage() {
         </div>
       )}
 
-      {/* Education Tip */}
-      <EducationTip tip={tip} />
-
-      {/* Budget setup */}
-      <div className="glass p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-slate-700">Monthly Budget</h3>
-        <p className="text-xs text-slate-500">Setting a budget unlocks savings rate, savings tracking and trajectory.</p>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1 flex-1 glass px-3 rounded-xl border border-purple-100">
-            <span className="text-slate-600 text-sm">{currencySymbol(profile.currency)}</span>
-            <input
-              type="number"
-              placeholder="e.g. 20000"
-              value={budgetInput}
-              onChange={(e) => setBudgetInput(e.target.value)}
-              className="flex-1 bg-transparent py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-            />
-          </div>
-          <button
-            onClick={handleBudgetSave}
-            className="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition-all"
-          >
-            Save
-          </button>
-        </div>
-        {profile.monthlyBudget && (
-          <p className="text-xs text-emerald-600">
-            ✓ Budget set: {formatMoney(profile.monthlyBudget, profile.currency, { whole: true })}/month
-          </p>
-        )}
-      </div>
-
-      {/* Currency selector */}
-      <div className="glass p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-slate-700">Currency</h3>
-        <p className="text-xs text-slate-500">Auto-detected from your location. Change it anytime.</p>
-        <div className="grid grid-cols-3 gap-2">
-          {CURRENCIES.map((c) => (
+      {/* Settings (collapsible) */}
+      <Section title="⚙️ Budget & currency">
+        <div className="glass p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-700">Monthly Budget</h3>
+          <p className="text-xs text-slate-500">Setting a budget unlocks savings rate, savings tracking and trajectory.</p>
+          <div className="flex gap-2">
+            <div className="flex items-center gap-1 flex-1 glass px-3 rounded-xl border border-purple-100">
+              <span className="text-slate-600 text-sm">{currencySymbol(profile.currency)}</span>
+              <input
+                type="number"
+                placeholder="e.g. 20000"
+                value={budgetInput}
+                onChange={(e) => setBudgetInput(e.target.value)}
+                className="flex-1 bg-transparent py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+              />
+            </div>
             <button
-              key={c.code}
-              onClick={() => setCurrency(c.code)}
-              className={`py-2.5 rounded-xl text-sm font-medium transition-all border ${
-                profile.currency === c.code
-                  ? 'bg-purple-600/20 border-purple-500/40 text-slate-900'
-                  : 'bg-purple-50/50 border-purple-100/70 text-slate-600 hover:bg-purple-50'
-              }`}
+              onClick={handleBudgetSave}
+              className="px-4 py-3 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-xl transition-all"
             >
-              {c.symbol} {c.code}
+              Save
             </button>
-          ))}
+          </div>
+          {profile.monthlyBudget && (
+            <p className="text-xs text-emerald-600">
+              ✓ Budget set: {formatMoney(profile.monthlyBudget, profile.currency, { whole: true })}/month
+            </p>
+          )}
         </div>
-      </div>
+
+        <div className="glass p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-700">Currency</h3>
+          <p className="text-xs text-slate-500">Auto-detected from your location. Change it anytime.</p>
+          <div className="grid grid-cols-3 gap-2">
+            {CURRENCIES.map((c) => (
+              <button
+                key={c.code}
+                onClick={() => setCurrency(c.code)}
+                className={`py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                  profile.currency === c.code
+                    ? 'bg-purple-600/20 border-purple-500/40 text-slate-900'
+                    : 'bg-purple-50/50 border-purple-100/70 text-slate-600 hover:bg-purple-50'
+                }`}
+              >
+                {c.symbol} {c.code}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <EducationTip tip={tip} />
+      </Section>
+    </div>
+  );
+}
+
+/** Collapsible section — mounts children only when open, so heavy AI cards don't
+ *  fetch until expanded (keeps the page short and the first load light). */
+function Section({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between py-2 text-sm font-bold text-slate-900"
+      >
+        <span>{title}</span>
+        <span className={`text-slate-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+      </button>
+      {open && <div className="space-y-4 pt-1">{children}</div>}
     </div>
   );
 }

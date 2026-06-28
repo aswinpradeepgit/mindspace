@@ -10,6 +10,7 @@ import { useExpenseStore } from '@/hooks/useExpenseStore';
 import { currencySymbol } from '@/lib/money';
 import { apiFetch } from '@/lib/api';
 import { NaturalLanguageBox } from '@/components/expense/NaturalLanguageBox';
+import { CommitmentsDashCard } from '@/components/layout/CommitmentsDashCard';
 
 interface ParseResult {
   amount: number;
@@ -157,6 +158,9 @@ export default function AddExpensePage() {
       >
         Next: Check In →
       </motion.button>
+
+      {/* Recurring commitments entry */}
+      <CommitmentsDashCard />
     </motion.div>
   );
 }
